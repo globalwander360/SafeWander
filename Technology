@@ -1,0 +1,447 @@
+I'll help you implement popup notifications for successful registration and login attempts, as well as for any errors that occur during these processes. I'll use PrimeNG's Toast component for this purpose, as it's a clean way to show non-intrusive notifications.
+
+Let's implement this for both components:
+
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { MessageService } from 'primeng/api';
+
+@Component({
+  selector: 'app-register',
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.css'],
+  providers: [MessageService]
+})
+export class RegisterComponent {
+  registerForm: FormGroup;
+  errorMessage: string = "";
+  loading: boolean = false;
+  roles = [
+    { label: 'User', value: 'USER' },
+    { label: 'Admin', value: 'ADMIN' },
+    { label: 'Logistic Coordinator', value: 'LOGISTIC_COORDINATOR' }
+  ];
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private messageService: MessageService
+  ) {
+    this.registerForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['', Validators.required]
+    });
+  }
+
+  // Getter methods for form controls
+  get email() { return this.registerForm.get('email'); }
+  get password() { return this.registerForm.get('password'); }
+  get role() { return this.registerForm.get('role'); }
+
+  register() {
+    if (this.registerForm.invalid) {
+      this.errorMessage = 'Please fill all required fields correctly';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: this.errorMessage,
+        life: 3000
+      });
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    this.authService.register(this.registerForm.value).subscribe(
+      response => {
+        this.loading = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Registration Successful',
+          detail: 'You have been registered successfully!',
+          life: 3000
+        });
+        
+        // Navigate after a short delay to ensure the user sees the message
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 1500);
+      },
+      error => {
+        this.loading = false;
+        
+        if (error.status === 409) {
+          this.errorMessage = 'Email already registered';
+        } else {
+          this.errorMessage = 'Registration failed. Please try again.';
+        }
+        
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration Failed',
+          detail: this.errorMessage,
+          life: 3000
+        });
+      }
+    );
+  }
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+}
+
+<div class="register-container">
+  <div class="register-card">
+    <h2>Register</h2>
+    <div *ngIf="errorMessage" class="error-alert">
+      {{ errorMessage }}
+    </div>
+    <form [formGroup]="registerForm" (ngSubmit)="register()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="text" id="email" formControlName="email" placeholder="Email">
+        <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="error-text">
+          <span *ngIf="email?.errors?.['required']">Email is required</span>
+          <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" formControlName="password" placeholder="Password">
+        <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="error-text">
+          <span *ngIf="password?.errors?.['required']">Password is required</span>
+          <span *ngIf="password?.errors?.['minlength']">Password must be at least 6 characters</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select id="role" formControlName="role" class="role-select">
+          <option value="">Select Role</option>
+          <option *ngFor="let option of roles" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <div *ngIf="role?.invalid && (role?.dirty || role?.touched)" class="error-text">
+          <span *ngIf="role?.errors?.['required']">Role is required</span>
+        </div>
+      </div>
+      <button type="submit" [disabled]="loading" class="register-button primary">
+        {{ loading ? 'Registering...' : 'Register' }}
+      </button>
+      <button type="button" class="register-button secondary" (click)="navigateTo('/login')">
+        Back to Login
+      </button>
+    </form>
+  </div>
+</div>
+
+<p-toast position="top-right"></p-toast>
+
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { MessageService } from 'primeng/api';
+
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css'],
+  providers: [MessageService]
+})
+export class LoginComponent {
+  loginForm: FormGroup;
+  errorMessage: string = "";
+  loading: boolean = false;
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private messageService: MessageService
+  ) {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required]
+    });
+  }
+
+  // Getter methods for form controls
+  get email() { return this.loginForm.get('email'); }
+  get password() { return this.loginForm.get('password'); }
+
+  login() {
+    if (this.loginForm.invalid) {
+      this.errorMessage = 'Please fill all required fields correctly';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: this.errorMessage,
+        life: 3000
+      });
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = "";
+
+    this.authService.login(this.loginForm.value).subscribe(
+      response => {
+        localStorage.setItem('role', response.role);
+        localStorage.setItem('user', JSON.stringify(response));
+
+        const role = response.role;
+        this.loading = false;
+        
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Login Successful',
+          detail: 'You have been logged in successfully!',
+          life: 2000
+        });
+        
+        // Navigate after a short delay to ensure the user sees the message
+        setTimeout(() => {
+          if (role === 'USER') {
+            this.router.navigate(['/user-dashboard']);
+          } else if (role === 'ADMIN') {
+            this.router.navigate(['/admin-dashboard']);
+          } else if (role === 'LOGISTIC_COORDINATOR') {
+            this.router.navigate(['/coordinator-dashboard']);
+          } else {
+            this.errorMessage = 'Unauthorized role';
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Authorization Error',
+              detail: this.errorMessage,
+              life: 3000
+            });
+          }
+        }, 1000);
+      },
+      error => {
+        this.loading = false;
+
+        if (error.status === 404) {
+          this.errorMessage = 'Email not found';
+        } else if (error.status === 401) {
+          this.errorMessage = 'Invalid credentials';
+        } else {
+          this.errorMessage = 'Login failed. Please try again.';
+        }
+        
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Login Failed',
+          detail: this.errorMessage,
+          life: 3000
+        });
+      }
+    );
+  }
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+}
+
+<div class="login-container">
+  <div class="login-card">
+    <h2>Login</h2>
+    <div *ngIf="errorMessage" class="error-alert">
+      {{ errorMessage }}
+    </div>
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="text" id="email" formControlName="email" placeholder="Email">
+        <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="error-text">
+          <span *ngIf="email?.errors?.['required']">Email is required</span>
+          <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" formControlName="password" placeholder="Password">
+        <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="error-text">
+          <span *ngIf="password?.errors?.['required']">Password is required</span>
+        </div>
+      </div>
+      <button type="submit" [disabled]="loading" class="login-button">
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+      <button type="button" class="register-button" (click)="navigateTo('/register')">
+        Register
+      </button>
+    </form>
+  </div>
+</div>
+
+<p-toast position="top-right"></p-toast>
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+
+// PrimeNG Modules
+import { ToastModule } from 'primeng/toast';
+
+import { AppComponent } from './app.component';
+import { LoginComponent } from './login/login.component';
+import { RegisterComponent } from './register/register.component';
+// Import other components as needed
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    LoginComponent,
+    RegisterComponent,
+    // Other components
+  ],
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule, // Required for PrimeNG animations
+    ReactiveFormsModule,
+    HttpClientModule,
+    RouterModule.forRoot([
+      { path: 'login', component: LoginComponent },
+      { path: 'register', component: RegisterComponent },
+      // Other routes
+      { path: '', redirectTo: '/login', pathMatch: 'full' }
+    ]),
+    // PrimeNG modules
+    ToastModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+# PrimeNG Styles Integration Guide
+
+## 1. Install PrimeNG
+
+First, make sure you have PrimeNG installed in your project:
+
+```bash
+npm install primeng primeicons
+```
+
+## 2. Import Required CSS
+
+In your `angular.json` file, add the following to the styles array:
+
+```json
+"styles": [
+  "node_modules/primeicons/primeicons.css",
+  "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
+  "node_modules/primeng/resources/primeng.min.css",
+  "src/styles.css"
+],
+```
+
+## 3. Ensure BrowserAnimationsModule is Imported
+
+Make sure `BrowserAnimationsModule` is imported in your `app.module.ts` file as shown in the provided code.
+
+## 4. Using Toast Component
+
+The Toast component is now properly integrated into both the login and registration components. The components will automatically show:
+
+- Success messages on successful login/registration
+- Error messages for validation errors and API errors
+- Custom messages for specific scenarios
+
+## 5. Customizing Toast Styles (Optional)
+
+If you want to customize the appearance of the toast messages, you can add the following CSS to your component's CSS file or to the global styles:
+
+```css
+:host ::ng-deep .p-toast .p-toast-message.p-toast-message-success {
+  background-color: #EFF8F1;
+  border-left: 6px solid #22C55E;
+}
+
+:host ::ng-deep .p-toast .p-toast-message.p-toast-message-error {
+  background-color: #FEF2F2;
+  border-left: 6px solid #EF4444;
+}
+
+:host ::ng-deep .p-toast .p-toast-message .p-toast-message-content {
+  padding: 1rem;
+}
+
+:host ::ng-deep .p-toast .p-toast-message .p-toast-message-content .p-toast-summary {
+  font-weight: 600;
+}
+```
+
+## 6. Additional PrimeNG Components
+
+If you want to add more PrimeNG components later, just follow these steps:
+
+1. Import the component module in `app.module.ts` (e.g., `import { DialogModule } from 'primeng/dialog';`)
+2. Add it to the imports array in `@NgModule`
+3. Use the component in your templates
+
+I've implemented popup notifications for both your registration and login pages using PrimeNG's Toast component. Here's what I've done:
+
+### Key Changes Made:
+
+1. **Added PrimeNG Toast Component:**
+   - Imported `MessageService` from PrimeNG in both components
+   - Added `<p-toast>` element to both HTML templates
+   - Added proper provider configuration
+
+2. **Registration Component:**
+   - Shows success toast on successful registration
+   - Shows error toast for validation errors and when registration fails
+   - Added a small delay before redirecting to login page so users can see the success message
+
+3. **Login Component:**
+   - Shows success toast when login is successful
+   - Shows error toast for validation errors and when login fails
+   - Added a small delay before redirecting to dashboard pages
+
+4. **App Module Configuration:**
+   - Added required PrimeNG module imports
+   - Added BrowserAnimationsModule which is required for animations
+
+### How to Use:
+
+1. **Install PrimeNG packages** if you haven't already:
+   ```bash
+   npm install primeng primeicons
+   ```
+
+2. **Update your `angular.json`** to include PrimeNG styles as described in the styles guide.
+
+3. **Replace your component files** with the ones I've provided:
+   - register.component.ts
+   - register.component.html
+   - login.component.ts
+   - login.component.html
+
+4. **Update your app.module.ts** to include the necessary PrimeNG modules.
+
+### How It Works:
+
+When you submit the registration form:
+- If there are validation errors, a red error toast will appear
+- If registration is successful, a green success toast will appear before redirecting
+- If registration fails (e.g., email already exists), a red error toast will appear
+
+Similarly for login, you'll see appropriate toast messages for success and error cases before navigation occurs.
+
+The toasts will automatically disappear after 3 seconds, but users can also dismiss them by clicking the X button.
+
+Would you like me to make any adjustments to the implementation?
