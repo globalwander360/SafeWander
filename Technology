@@ -1,293 +1,133 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { MessageService } from 'primeng/api';
+Thanks for sharing your manual mappers, DTOs, and entities. Based on what you provided, I’ll now walk you through exactly what changes to make to use MapStruct and completely replace the manual mappers.
 
-@Component({
-  selector: 'app-register',
-  templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css'],
-  providers: [MessageService]
-})
-export class RegisterComponent {
-  registerForm: FormGroup;
-  errorMessage: string = "";
-  loading: boolean = false;
-  roles = [
-    { label: 'User', value: 'USER' },
-    { label: 'Admin', value: 'ADMIN' },
-    { label: 'Logistic Coordinator', value: 'LOGISTIC_COORDINATOR' }
-  ];
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private messageService: MessageService
-  ) {
-    this.registerForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['', Validators.required]
-    });
-  }
+---
 
-  // Getter methods for form controls
-  get email() { return this.registerForm.get('email'); }
-  get password() { return this.registerForm.get('password'); }
-  get role() { return this.registerForm.get('role'); }
+1. Dependencies (Update pom.xml or build.gradle)
 
-  register() {
-    if (this.registerForm.invalid) {
-      this.errorMessage = 'Please fill all required fields correctly';
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: this.errorMessage,
-        life: 3000
-      });
-      return;
-    }
+For Maven (pom.xml):
 
-    this.loading = true;
-    this.errorMessage = '';
+<dependency>
+  <groupId>org.mapstruct</groupId>
+  <artifactId>mapstruct</artifactId>
+  <version>1.5.5.Final</version>
+</dependency>
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.8.1</version>
+      <configuration>
+        <annotationProcessorPaths>
+          <path>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>1.5.5.Final</version>
+          </path>
+        </annotationProcessorPaths>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
 
-    this.authService.register(this.registerForm.value).subscribe(
-      response => {
-        this.loading = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Registration Successful',
-          detail: 'You have been registered successfully!',
-          life: 3000
-        });
-        
-        // Navigate after a short delay to ensure the user sees the message
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 1500);
-      },
-      error => {
-        this.loading = false;
-        
-        if (error.status === 409) {
-          this.errorMessage = 'Email already registered';
-        } else {
-          this.errorMessage = 'Registration failed. Please try again.';
-        }
-        
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Registration Failed',
-          detail: this.errorMessage,
-          life: 3000
-        });
-      }
-    );
-  }
 
-  navigateTo(path: string): void {
-    this.router.navigate([path]);
-  }
+---
+
+2. Replace Manual Mapper with MapStruct Interfaces
+
+GoodsMapper.java
+
+import org.mapstruct.*;
+import org.springframework.stereotype.Component;
+import java.util.List;
+
+@Mapper(componentModel = "spring")
+public interface GoodsMapper {
+
+    @Mapping(source = "userId", target = "user.id")
+    @Mapping(source = "categoryId", target = "category.id")
+    GoodsEntity toEntity(GoodsDTO dto);
+
+    @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "category.id", target = "categoryId")
+    GoodsDTO toDto(GoodsEntity entity);
+
+    List<GoodsDTO> toDtoList(List<GoodsEntity> goodsEntities);
+}
+
+CategoryMapper.java
+
+import org.mapstruct.*;
+import org.springframework.stereotype.Component;
+import java.util.List;
+
+@Mapper(componentModel = "spring")
+public interface CategoryMapper {
+
+    Category toEntity(CategoryDTO dto);
+
+    CategoryDTO toDto(Category category);
+
+    List<CategoryDTO> toDtoList(List<Category> categories);
 }
 
 
+---
+
+3. Remove Manual Mapper Classes
+
+You can delete the original GoodsMapper.java and CategoryMapper.java you manually wrote.
 
 
-<div class="register-container">
-  <div class="register-card">
-    <h2>Register</h2>
-    <div *ngIf="errorMessage" class="error-alert">
-      {{ errorMessage }}
-    </div>
-    <form [formGroup]="registerForm" (ngSubmit)="register()">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="text" id="email" formControlName="email" placeholder="Email">
-        <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="error-text">
-          <span *ngIf="email?.errors?.['required']">Email is required</span>
-          <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" formControlName="password" placeholder="Password">
-        <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="error-text">
-          <span *ngIf="password?.errors?.['required']">Password is required</span>
-          <span *ngIf="password?.errors?.['minlength']">Password must be at least 6 characters</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="role">Role</label>
-        <select id="role" formControlName="role" class="role-select">
-          <option value="">Select Role</option>
-          <option *ngFor="let option of roles" [value]="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        <div *ngIf="role?.invalid && (role?.dirty || role?.touched)" class="error-text">
-          <span *ngIf="role?.errors?.['required']">Role is required</span>
-        </div>
-      </div>
-      <button type="submit" [disabled]="loading" class="register-button primary">
-        {{ loading ? 'Registering...' : 'Register' }}
-      </button>
-      <button type="button" class="register-button secondary" (click)="navigateTo('/login')">
-        Back to Login
-      </button>
-    </form>
-  </div>
-</div>
+---
 
-<p-toast position="top-right"></p-toast>
+4. Update Service Layer
+
+Wherever you had:
+
+GoodsMapper.toDto(goods)
+
+Replace with:
+
+@Autowired
+private GoodsMapper goodsMapper;
+
+// Or constructor injection
+
+goodsMapper.toDto(goods)
 
 
+---
+
+5. Minor Fixes in DTOs and Entities
+
+You have some syntax errors and spacing issues that must be fixed for MapStruct to compile:
+
+Fix in GoodsEntity.java
+
+@Column(name = "expiry_date")
+private LocalDate expiryDate;
+
+Fix in GoodsDTO.java
+
+private LocalDate expiryDate;
+
+Fix in Category.java
+
+private String storageRequirements;
 
 
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { MessageService } from 'primeng/api';
+---
 
-@Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css'],
-  providers: [MessageService]
-})
-export class LoginComponent {
-  loginForm: FormGroup;
-  errorMessage: string = "";
-  loading: boolean = false;
+Summary of What You Needed to Change
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-    private messageService: MessageService
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required]
-    });
-  }
+Task	Action
 
-  // Getter methods for form controls
-  get email() { return this.loginForm.get('email'); }
-  get password() { return this.loginForm.get('password'); }
-
-  login() {
-    if (this.loginForm.invalid) {
-      this.errorMessage = 'Please fill all required fields correctly';
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: this.errorMessage,
-        life: 3000
-      });
-      return;
-    }
-
-    this.loading = true;
-    this.errorMessage = "";
-
-    this.authService.login(this.loginForm.value).subscribe(
-      response => {
-        localStorage.setItem('role', response.role);
-        localStorage.setItem('user', JSON.stringify(response));
-
-        const role = response.role;
-        this.loading = false;
-        
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Login Successful',
-          detail: 'You have been logged in successfully!',
-          life: 2000
-        });
-        
-        // Navigate after a short delay to ensure the user sees the message
-        setTimeout(() => {
-          if (role === 'USER') {
-            this.router.navigate(['/user-dashboard']);
-          } else if (role === 'ADMIN') {
-            this.router.navigate(['/admin-dashboard']);
-          } else if (role === 'LOGISTIC_COORDINATOR') {
-            this.router.navigate(['/coordinator-dashboard']);
-          } else {
-            this.errorMessage = 'Unauthorized role';
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Authorization Error',
-              detail: this.errorMessage,
-              life: 3000
-            });
-          }
-        }, 1000);
-      },
-      error => {
-        this.loading = false;
-
-        if (error.status === 404) {
-          this.errorMessage = 'Email not found';
-        } else if (error.status === 401) {
-          this.errorMessage = 'Invalid credentials';
-        } else {
-          this.errorMessage = 'Login failed. Please try again.';
-        }
-        
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Login Failed',
-          detail: this.errorMessage,
-          life: 3000
-        });
-      }
-    );
-  }
-
-  navigateTo(path: string): void {
-    this.router.navigate([path]);
-  }
-}
-
-
-
-<div class="login-container">
-  <div class="login-card">
-    <h2>Login</h2>
-    <div *ngIf="errorMessage" class="error-alert">
-      {{ errorMessage }}
-    </div>
-    <form [formGroup]="loginForm" (ngSubmit)="login()">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="text" id="email" formControlName="email" placeholder="Email">
-        <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="error-text">
-          <span *ngIf="email?.errors?.['required']">Email is required</span>
-          <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" formControlName="password" placeholder="Password">
-        <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="error-text">
-          <span *ngIf="password?.errors?.['required']">Password is required</span>
-        </div>
-      </div>
-      <button type="submit" [disabled]="loading" class="login-button">
-        {{ loading ? 'Logging in...' : 'Login' }}
-      </button>
-      <button type="button" class="register-button" (click)="navigateTo('/register')">
-        Register
-      </button>
-    </form>
-  </div>
-</div>
-
-<p-toast position="top-right"></p-toast>
-
+Mapper logic	Replace manual methods with @Mapper interfaces
+DTOs/entities	Ensure field names are valid (e.g., expiryDate, not expiry Date)
+Service classes	Inject and use MapStruct mappers
+Dependencies	Add MapStruct to pom.xml or build.gradle
+Manual mappers	Delete old classes after migration
 
 
