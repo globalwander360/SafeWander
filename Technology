@@ -1,216 +1,274 @@
-.admin-dashboard-container {
-  max-width: 1400px;
-  width: 90%;
-  margin: 2rem auto;
-  padding: 3rem;
-  background-color: #f8f9fa;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
 
-.admin-dashboard-container h2 {
-  color: #2c3e50;
-  margin-bottom: 3rem;
-  font-size: 2.2rem;
-  border-bottom: 3px solid #4a6cfa;
-  padding-bottom: 1rem;
-  text-align: center;
-}
+1. Warehouse.java (Entity)
 
-.admin-dashboard-container button {
-  background-color: #4a6cfa;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 22px;
-  margin: 0.8rem 1.5rem 0.8rem 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 280px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+package org.policy.entity;
 
-.admin-dashboard-container button:hover {
-  background-color: #3a5aea;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
+import jakarta.persistence.*;
+import lombok.*;
 
-.admin-dashboard-container button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+@Entity
+@Table(name = "warehouse")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Warehouse {
 
-.admin-dashboard-container .logout-button {
-  background-color: #ef4444;
-  margin-top: 2rem;
-}
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-.admin-dashboard-container .logout-button:hover {
-  background-color: #dc2626;
-}
-
-@media (max-width: 768px) {
-  .admin-dashboard-container {
-    padding: 2rem;
-    width: 95%;
-  }
-  
-  .admin-dashboard-container button {
-    width: 100%;
-    margin: 0.8rem 0;
-  }
+    private String name;
+    private String location;
 }
 
 
+---
 
+2. WarehouseDto.java
 
-.coordinator-dashboard-container {
-  max-width: 1400px;
-  width: 90%;
-  margin: 2rem auto;
-  padding: 3rem;
-  background-color: #f0f4f8;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  border-left: 5px solid #4299e1;
-}
+package org.policy.dto;
 
-.coordinator-dashboard-container h2 {
-  color: #2c3e50;
-  margin-bottom: 3rem;
-  font-size: 2.2rem;
-  border-bottom: 3px solid #4299e1;
-  padding-bottom: 1rem;
-  text-align: center;
-}
+import lombok.*;
 
-.coordinator-dashboard-container button {
-  background-color: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 22px;
-  margin: 0.8rem 1.5rem 0.8rem 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 280px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class WarehouseDto {
 
-.coordinator-dashboard-container button:hover {
-  background-color: #3182ce;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.coordinator-dashboard-container button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.coordinator-dashboard-container .logout-button {
-  background-color: #ef4444;
-  margin-top: 2rem;
-}
-
-.coordinator-dashboard-container .logout-button:hover {
-  background-color: #dc2626;
-}
-
-@media (max-width: 768px) {
-  .coordinator-dashboard-container {
-    padding: 2rem;
-    width: 95%;
-  }
-  
-  .coordinator-dashboard-container button {
-    width: 100%;
-    margin: 0.8rem 0;
-  }
+    private Long id;
+    private String name;
+    private String location;
 }
 
 
+---
 
+3. WarehouseMapper.java (MapStruct Interface)
 
-.user-dashboard-container {
-  max-width: 1400px;
-  width: 90%;
-  margin: 2rem auto;
-  padding: 3rem;
-  background-color: #f3f4f6;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  border-left: 5px solid #10b981;
+package org.policy.mapper;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.factory.Mappers;
+import org.policy.dto.WarehouseDto;
+import org.policy.entity.Warehouse;
+
+@Mapper(componentModel = "spring")
+public interface WarehouseMapper {
+
+    WarehouseMapper INSTANCE = Mappers.getMapper(WarehouseMapper.class);
+
+    Warehouse toEntity(WarehouseDto dto);
+
+    WarehouseDto toDto(Warehouse entity);
 }
 
-.user-dashboard-container h2 {
-  color: #2c3e50;
-  margin-bottom: 3rem;
-  font-size: 2.2rem;
-  border-bottom: 3px solid #10b981;
-  padding-bottom: 1rem;
-  text-align: center;
+
+---
+
+4. WarehouseRepository.java
+
+package org.policy.repository;
+
+import org.policy.entity.Warehouse;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
+
+    boolean existsByName(String name);
+
+    Optional<Warehouse> findByLocation(String location);
 }
 
-.user-dashboard-container button {
-  background-color: #10b981;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 22px;
-  margin: 0.8rem 1.5rem 0.8rem 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 280px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+
+---
+
+5. WarehouseService.java
+
+package org.policy.service;
+
+import org.policy.dto.WarehouseDto;
+
+import java.util.List;
+
+public interface WarehouseService {
+
+    WarehouseDto create(WarehouseDto dto);
+
+    WarehouseDto update(Long id, WarehouseDto dto) throws Exception;
+
+    void delete(Long id);
+
+    WarehouseDto getById(Long id) throws Exception;
+
+    List<WarehouseDto> getAll();
 }
 
-.user-dashboard-container button:hover {
-  background-color: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+
+---
+
+6. WarehouseServiceImpl.java
+
+package org.policy.service.impl;
+
+import lombok.RequiredArgsConstructor;
+import org.policy.dto.WarehouseDto;
+import org.policy.entity.Warehouse;
+import org.policy.mapper.WarehouseMapper;
+import org.policy.repository.WarehouseRepository;
+import org.policy.service.WarehouseService;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class WarehouseServiceImpl implements WarehouseService {
+
+    private final WarehouseRepository warehouseRepository;
+    private final WarehouseMapper warehouseMapper;
+
+    @Override
+    public WarehouseDto create(WarehouseDto dto) {
+        if (warehouseRepository.existsByName(dto.getName())) {
+            throw new IllegalArgumentException("Warehouse already exists with name: " + dto.getName());
+        }
+
+        Warehouse warehouse = warehouseMapper.toEntity(dto);
+        return warehouseMapper.toDto(warehouseRepository.save(warehouse));
+    }
+
+    @Override
+    public WarehouseDto update(Long id, WarehouseDto dto) throws Exception {
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new Exception("Warehouse not found with id " + id));
+
+        warehouse.setName(dto.getName());
+        warehouse.setLocation(dto.getLocation());
+
+        return warehouseMapper.toDto(warehouseRepository.save(warehouse));
+    }
+
+    @Override
+    public void delete(Long id) {
+        warehouseRepository.deleteById(id);
+    }
+
+    @Override
+    public WarehouseDto getById(Long id) throws Exception {
+        return warehouseMapper.toDto(warehouseRepository.findById(id)
+                .orElseThrow(() -> new Exception("Warehouse not found with id " + id)));
+    }
+
+    @Override
+    public List<WarehouseDto> getAll() {
+        return warehouseRepository.findAll().stream()
+                .map(warehouseMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }
 
-.user-dashboard-container button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-.user-dashboard-container .logout-button {
-  background-color: #ef4444;
-  margin-top: 2rem;
-}
+---
 
-.user-dashboard-container .logout-button:hover {
-  background-color: #dc2626;
-}
+7. Add MapStruct Dependencies to pom.xml
 
-@media (max-width: 768px) {
-  .user-dashboard-container {
-    padding: 2rem;
-    width: 95%;
-  }
-  
-  .user-dashboard-container button {
-    width: 100%;
-    margin: 0.8rem 0;
-  }
-}
+<dependencies>
+    <!-- MapStruct -->
+    <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct</artifactId>
+        <version>1.5.5.Final</version>
+    </dependency>
+    <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct-processor</artifactId>
+        <version>1.5.5.Final</version>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
 
+<build>
+    <plugins>
+        <!-- Annotation Processor for MapStruct -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.11.0</version>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>org.mapstruct</groupId>
+                        <artifactId>mapstruct-processor</artifactId>
+                        <version>1.5.5.Final</version>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+
+
+
+
+WarehouseController.java
+
+package org.policy.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.policy.dto.WarehouseDto;
+import org.policy.service.WarehouseService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/warehouses")
+@RequiredArgsConstructor
+public class WarehouseController {
+
+    private final WarehouseService warehouseService;
+
+    @PostMapping
+    public ResponseEntity<WarehouseDto> createWarehouse(@RequestBody WarehouseDto dto) {
+        WarehouseDto created = warehouseService.create(dto);
+        return ResponseEntity.ok(created);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<WarehouseDto> updateWarehouse(@PathVariable Long id, @RequestBody WarehouseDto dto) {
+        try {
+            WarehouseDto updated = warehouseService.update(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWarehouse(@PathVariable Long id) {
+        warehouseService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<WarehouseDto> getWarehouseById(@PathVariable Long id) {
+        try {
+            WarehouseDto dto = warehouseService.getById(id);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<WarehouseDto>> getAllWarehouses() {
+        return ResponseEntity.ok(warehouseService.getAll());
+    }
+}
 
