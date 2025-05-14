@@ -1,3 +1,62 @@
+<!-- Table Section -->
+<section class="goods-table-section">
+  <h3>Registered Goods List</h3>
+  <i>Note: You Cannot Delete Approved Goods</i>
+  
+  <p-table 
+    [value]="goodsList" 
+    [paginator]="true" 
+    [rows]="rows" 
+    [showCurrentPageReport]="true" 
+    [(first)]="first"
+    [totalRecords]="totalRecords"
+    [rowsPerPageOptions]="[5, 10, 25]"
+    [sortMode]="'multiple'"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    (onPage)="onPageChange($event)">
+    
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th pSortableColumn="categoryId">Category <p-sortIcon field="categoryId"></p-sortIcon></th>
+        <th pSortableColumn="quantity">Quantity <p-sortIcon field="quantity"></p-sortIcon></th>
+        <th pSortableColumn="location">Location <p-sortIcon field="location"></p-sortIcon></th>
+        <th pSortableColumn="price">Price <p-sortIcon field="price"></p-sortIcon></th>
+        <th pSortableColumn="supplier">Supplier <p-sortIcon field="supplier"></p-sortIcon></th>
+        <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="body" let-goods>
+      <tr>
+        <td>{{ goods.name }}</td>
+        <td>{{ getCategoryName(goods.categoryId) }}</td>
+        <td>{{ goods.quantity }}</td>
+        <td>{{ goods.location }}</td>
+        <td>{{ goods.price }}</td>
+        <td>{{ goods.supplier }}</td>
+        <td>{{ goods.status }}</td>
+        <td>
+          <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-success p-button-sm" 
+                  (click)="editGoods(goods)"></button>
+          <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-sm ml-2" 
+                  (click)="deleteGoods(goods.id)"
+                  [disabled]="goods.status === 'APPROVED'"></button>
+        </td>
+      </tr>
+    </ng-template>
+    
+    <ng-template pTemplate="paginatorleft">
+      <p>Total Records: {{totalRecords}}</p>
+    </ng-template>
+  </p-table>
+</section>
+
+
+
+
+
 // goods-registration.component.ts
 import { Component, OnInit } from '@angular/core';
 import { GoodsService } from 'src/app/services/goods.service';
